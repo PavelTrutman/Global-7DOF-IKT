@@ -1,15 +1,20 @@
 % Pavel Trutman
 % pavel.trutman@cvut.cz
 
+addpath('../');
 
 % store your desired pose in the variable Mh
-MhFeasible =   [    0.2890    0.8294    0.4782   -0.8802;
-                    0.5869    0.2412   -0.7729  -93.2299;
-                   -0.7564    0.5040   -0.4170  661.8059;
+MhFeasible =   [    0.4405    0.6064    0.6620 -281.8821;
+                    0.7712   -0.6331    0.0666  483.7939;
+                    0.4595    0.4812   -0.7465  276.0602;
                          0         0         0    1.0000];
-MhInfeasible = [    0.7023    0.6694    0.2422 -277.2422;
-                   -0.5829    0.7361   -0.3440  526.3147;
-                   -0.4086    0.1004    0.9072  110.4149;
+MhInfeasible = [    0.4528   -0.1592    0.8773  544.6913;
+                    0.0416    0.9866    0.1576 -606.4869;
+                   -0.8906   -0.0348    0.4534   39.5770;
+                         0         0         0    1.0000];
+MhFailed =     [    0.4293   -0.9028    0.0254  386.1023;
+                    0.8547    0.4151    0.3118  -85.1766;
+                   -0.2920   -0.1122    0.9498    4.5084;
                          0         0         0    1.0000];
 Mh = MhFeasible;
 
@@ -20,10 +25,15 @@ qHat = zeros(7, 1);
 w = ones(7, 1);
 w = w./sum(w);
 
+% set power of the objective function n and the relaxation order
+n = 4;
+relaxOrder = 2;
+
 % path to the Maple binary
 maplePath = 'maple';
 
-load('KUKA_LBR.mat');
+% load kinematic parameters of the manipulator
+load('manipulator.mat');
 
 e4 = [1 2 3 5 6 7];
 
@@ -34,7 +44,7 @@ save(MhFile, 'Mh');
 system(['touch ', eqFile]);
 
 % run Maple
-mapleCMD = [maplePath, ' -c ''MhFile := \`', MhFile, '\`'' -c ''eqFile := \`', eqFile, '\`'' -c ''read \`KUKA_LBR.mpl\`'' -c ''quit'''];
+mapleCMD = [maplePath, ' -c ''MhFile := \`', MhFile, '\`'' -c ''eqFile := \`', eqFile, '\`'' -c ''read \`symReduction.mpl\`'' -c ''quit'''];
 [status, output] = system(mapleCMD, '-echo');
 
 % format the equations
@@ -68,7 +78,7 @@ Iineq = [-(ce4 + 1).*tan(M.thetaLimLow(e4)./2) + se4; (ce4 + 1).*tan(M.thetaLimH
 Iineq = [Iineq; 1 - ce4.^2; 1 - se4.^2];
 
 % objective function
-f = sum(2*we4.*(-ce4.*cos(qHate4) -se4.*sin(qHate4) + 1));
+f = sum(2*we4.*(-ce4.*cos(qHate4) -se4.*sin(qHate4) + 1 + 1).^n);
 
 mset('yalmip', true);
 mset(sdpsettings('solver', 'mosek'));
@@ -77,7 +87,7 @@ mset('testol', 1e-1);
 %mset('ranktol', 1e-1);
 
 % solve in GloptiPoly
-P = msdp(min(f), I == 0, Iineq >= 0, 2);
+P = msdp(min(f), I == 0, Iineq >= 0, relaxOrder);
 [status, obj] = msol(P);
 if status == -1
   fprintf('\nThis is an infeasible pose.\n');
