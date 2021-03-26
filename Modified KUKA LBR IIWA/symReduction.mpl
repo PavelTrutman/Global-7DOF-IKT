@@ -5,7 +5,7 @@ with(combinat, choose):
 with(Groebner):
 with(MatrixPolynomialAlgebra):
 with(CodeGeneration):
-interface(rtablesize=24):
+interface(rtablesize=10):
 interface(warnlevel=0):
 Digits:=30:
 RatResolution:=10000:
@@ -16,7 +16,7 @@ read(`../DH.mpl`);
 
 # mechanism description
 MechParams := {
-a1=0,     a2=0,    a3=0,     a4=0,    a5=0,     a6=0,    a7=0,
+a1=0,     a2=100,  a3=0,     a4=0,    a5=0,     a6=0,    a7=0,
 d1=340,   d2=0,    d3=400,   d4=0,    d5=400,   d6=0,    d7=126,
 A1=-Pi/2, A2=Pi/2, A3=-Pi/2, A4=Pi/2, A5=-Pi/2, A6=Pi/2, A7=0};
 
@@ -42,31 +42,23 @@ eq:=simplify(subs([op(Mechanism),op(MhRV)],M2L(lrE)));
 eqX:=numer~(normal~(([op(eq),s1^2+c1^2-1,s2^2+c2^2-1,s3^2+c3^2-1,s4^2+c4^2-1,s5^2+c5^2-1,s6^2+c6^2-1,s7^2+c7^2-1]))):
 
 infolevel[GroebnerBasis] := 0:
-B := Basis(eqX, tdeg(op(indets(eqX)))):
+B := Basis(eqX, tdeg(op(indets(eqX))));
 
 if not evalb(B = [1]) then
 
-  e := eliminate(B, [c4,s4]):
-  vrEl := e[1];
-  eqXEl := e[2]:
-  vrNonel := [c1, s1, c2, s2, c3, s3, c5, s5, c6, s6, c7, s7]:
-  BEl := Basis(eqXEl,tdeg(op(indets(eqXEl)))):
+  idxDegTwo := ListTools[SearchAll](2, map(degree, B)):
+  eqQ := B[[idxDegTwo]]:
 
-  idxDegTwo := ListTools[SearchAll](2, map(degree, BEl)):
-  eqQ := BEl[[idxDegTwo]]:
+  BNew := Basis(eqQ, tdeg(op(indets(eqQ))));
 
-  BElNew := Basis(eqQ, tdeg(op(indets(eqXEl)))):
-
-  if evalb(BEl = BElNew) then
+  if evalb(B = BNew) then
 
     for i from 1 to nops(eqQ) do
-      eqQ[i]:= evalf(eqQ[i]/LeadingCoefficient(eqQ[i], tdeg(op(vrNonel)))):
+      eqQ[i]:= evalf(eqQ[i]/LeadingCoefficient(eqQ[i], tdeg(op(indets(eqQ))))):
     end do:
     eqMatlab := Matlab(eqQ, output=string):
     fd := fopen(eqFile, WRITE, TEXT):
     FileTools[Text][WriteString](fd, eqMatlab):
-    FileTools[Text][WriteString](fd, Matlab(evalf(op(vrEl[1])[2]), output=string)):
-    FileTools[Text][WriteString](fd, Matlab(simplify(evalf(op(vrEl[2])[2])), output=string)):
     fclose(fd):
   end if;
 end if;

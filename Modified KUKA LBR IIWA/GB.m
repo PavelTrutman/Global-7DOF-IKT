@@ -4,17 +4,13 @@
 addpath('../');
 
 % store your desired pose in the variable Mh
-MhFeasible =   [    0.4405    0.6064    0.6620 -281.8821;
-                    0.7712   -0.6331    0.0666  483.7939;
-                    0.4595    0.4812   -0.7465  276.0602;
+MhFeasible =   [    0.3427    0.3200    0.8832  239.6992;
+                   -0.4003    0.9003   -0.1709  355.4527;
+                   -0.8499   -0.2950    0.4367  321.9285;
                          0         0         0    1.0000];
-MhInfeasible = [    0.4528   -0.1592    0.8773  544.6913;
-                    0.0416    0.9866    0.1576 -606.4869;
-                   -0.8906   -0.0348    0.4534   39.5770;
-                         0         0         0    1.0000];
-MhFailed =     [    0.4293   -0.9028    0.0254  386.1023;
-                    0.8547    0.4151    0.3118  -85.1766;
-                   -0.2920   -0.1122    0.9498    4.5084;
+MhInfeasible = [   -0.5853    0.8026    0.1151  214.4608;
+                    0.0837   -0.0814    0.9932 -119.0223;
+                    0.8065    0.5909   -0.0195  342.5528;
                          0         0         0    1.0000];
 Mh = MhFeasible;
 
@@ -29,18 +25,38 @@ w = w./sum(w);
 n = 4;
 relaxOrder = 2;
 
+% path to the Maple binary
+maplePath = 'maple';
+
 % load kinematic parameters of the manipulator
 load('manipulator.mat');
+
+% prepare for Maple
+MhFile = [tempname, '.mat'];
+eqFile = tempname;
+save(MhFile, 'Mh');
+system(['touch ', eqFile]);
+
+% run Maple
+mapleCMD = [maplePath, ' -c ''MhFile := \`', MhFile, '\`'' -c ''eqFile := \`', eqFile, '\`'' -c ''read \`symReduction.mpl\`'' -c ''quit'''];
+[status, output] = system(mapleCMD, '-echo');
+
+% format the equations
+system(['sed -i -e ''1 s/\([cs]\)\([1-7]\)/\1(\2)/g'' ', eqFile]);
+system(['sed -i -e ''3 s/\([cs]\)\([1-7]\)/\1Sol(\2, j)/g'' ', eqFile]);
 
 % unknowns
 mpol('c', 7);
 mpol('s', 7);
 
-% polynomials
-p = DHT_GP(M, c, s, 3)*DHT_GP(M, c, s, 4)*DHT_GP(M, c, s, 5) - iDHT_GP(M, c, s, 2)*iDHT_GP(M, c, s, 1)*Mh*iDHT_GP(M, c, s, 7)*iDHT_GP(M, c, s, 6);
-p = p(1:3, :);
-p = transpose(p); % to match equation numbering with Maple
-I = p(:);
+% parse the equations
+eqStr = splitlines(fileread(eqFile));
+eval(eqStr{1});
+I = cg';
+
+% clean up
+delete(MhFile);
+delete(eqFile);
 
 % add cos(th_i)^2 + sin(th_i)^2 = 1 equations
 I = [I; c.^2 + s.^2 - 1];
