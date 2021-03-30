@@ -4,14 +4,10 @@
 addpath('../');
 
 % store your desired pose in the variable Mh
-MhFeasible =   [    0.3427    0.3200    0.8832  239.6992;
-                   -0.4003    0.9003   -0.1709  355.4527;
-                   -0.8499   -0.2950    0.4367  321.9285;
-                         0         0         0    1.0000];
-MhInfeasible = [   -0.5853    0.8026    0.1151  214.4608;
-                    0.0837   -0.0814    0.9932 -119.0223;
-                    0.8065    0.5909   -0.0195  342.5528;
-                         0         0         0    1.0000];
+MhFeasible.M =       [[41/105, -88/105, 8/21, -11807/100]; [8/21, 11/21, 16/21, 389/100]; [-88/105, -16/105, 11/21, -24931/100]; [0, 0, 0, 1]];
+MhFeasible.maple =   'MhR := Matrix(3, 4, [[41/105,-88/105,8/21,-11807/100],[8/21,11/21,16/21,389/100],[-88/105,-16/105,11/21,-24931/100]]);';
+MhInfeasible.M =     [[43/93, 20/93, -80/93, -3841/100]; [-20/93, -85/93, -32/93, 791/20]; [-80/93, 32/93, -35/93, 13219/50]; [0, 0, 0, 1]];
+MhInfeasible.maple = 'MhR := Matrix(3, 4, [[43/93,20/93,-80/93,-3841/100],[-20/93,-85/93,-32/93,791/20],[-80/93,32/93,-35/93,13219/50]]);';
 Mh = MhFeasible;
 
 % store your theta_hat in the variable qHat
@@ -29,22 +25,21 @@ relaxOrder = 2;
 maplePath = 'maple';
 
 % load kinematic parameters of the manipulator
-load('manipulator.mat');
+% choose one of the random manipulators
+manipulatorId = 1;
+load(['manipulator.', num2str(manipulatorId), '.mat']);
 
 % prepare for Maple
-MhFile = [tempname, '.mat'];
 eqFile = tempname;
-save(MhFile, 'Mh');
 system(['touch ', eqFile]);
 
 % run Maple
-mapleCMD = [maplePath, ' -c ''MhFile := \`', MhFile, '\`'' -c ''eqFile := \`', eqFile, '\`'' -c ''read \`symReduction.mpl\`'' -c ''quit'''];
+mapleCMD = [maplePath, ' -c ''', Mh.maple, ''' -c ''eqFile := \`', eqFile, '\`'' -c ''manId := ', num2str(manipulatorId), ''' -c ''read \`symReduction.mpl\`'' -c ''quit'''];
 [mapleStatus, output] = system(mapleCMD, '-echo');
 assert(mapleStatus == 0, output);
 
 % format the equations
 system(['sed -i -e ''1 s/\([cs]\)\([1-7]\)/\1(\2)/g'' ', eqFile]);
-system(['sed -i -e ''3 s/\([cs]\)\([1-7]\)/\1Sol(\2, j)/g'' ', eqFile]);
 
 % unknowns
 mpol('c', 7);
@@ -56,7 +51,6 @@ eval(eqStr{1});
 I = cg';
 
 % clean up
-delete(MhFile);
 delete(eqFile);
 
 % add cos(th_i)^2 + sin(th_i)^2 = 1 equations
@@ -99,8 +93,8 @@ if status == 1
     MhAngles = double(DHFKT(M, angles(:, j)));
 
     % compute errors
-    errorC = norm(MhAngles(1:3, 4) - Mh(1:3, 4));
-    errorR = acos(1/2*(trace(Mh(1:3, 1:3)\MhAngles(1:3, 1:3))-1));
+    errorC = norm(MhAngles(1:3, 4) - Mh.M(1:3, 4));
+    errorR = acos(1/2*(trace(Mh.M(1:3, 1:3)\MhAngles(1:3, 1:3))-1));
 
     fprintf(['Position error: ', num2str(errorC), ' mm\n']);
     fprintf(['Rotation error: ', num2str(rad2deg(errorR)), ' deg\n']);

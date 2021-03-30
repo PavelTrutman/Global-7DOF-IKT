@@ -45,7 +45,8 @@ system(['touch ', eqFile]);
 
 % run Maple
 mapleCMD = [maplePath, ' -c ''MhFile := \`', MhFile, '\`'' -c ''eqFile := \`', eqFile, '\`'' -c ''read \`symReduction.mpl\`'' -c ''quit'''];
-[status, output] = system(mapleCMD, '-echo');
+[mapleStatus, output] = system(mapleCMD, '-echo');
+assert(mapleStatus == 0, output);
 
 % format the equations
 system(['sed -i -e ''1 s/\([cs]\)\([1-7]\)/\1(\2)/g'' ', eqFile]);

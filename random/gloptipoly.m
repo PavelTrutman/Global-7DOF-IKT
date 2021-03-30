@@ -4,14 +4,9 @@
 addpath('../');
 
 % store your desired pose in the variable Mh
-MhFeasible =   [    0.3427    0.3200    0.8832  239.6992;
-                   -0.4003    0.9003   -0.1709  355.4527;
-                   -0.8499   -0.2950    0.4367  321.9285;
-                         0         0         0    1.0000];
-MhInfeasible = [   -0.5853    0.8026    0.1151  214.4608;
-                    0.0837   -0.0814    0.9932 -119.0223;
-                    0.8065    0.5909   -0.0195  342.5528;
-                         0         0         0    1.0000];
+MhFeasible =   [[41/105, -88/105, 8/21, -11807/100]; [8/21, 11/21, 16/21, 389/100]; [-88/105, -16/105, 11/21, -24931/100]; [0, 0, 0, 1]];
+MhInfeasible = [[43/93, 20/93, -80/93, -3841/100]; [-20/93, -85/93, -32/93, 791/20]; [-80/93, 32/93, -35/93, 13219/50]; [0, 0, 0, 1]];
+MhFailed =     [[69/95, -6/19, 58/95, -1089/5]; [42/95, 17/19, -6/95, 15977/100]; [-10/19, 6/19, 15/19, -4607/50]; [0, 0, 0, 1]];
 Mh = MhFeasible;
 
 % store your theta_hat in the variable qHat
@@ -25,39 +20,20 @@ w = w./sum(w);
 n = 4;
 relaxOrder = 2;
 
-% path to the Maple binary
-maplePath = 'maple';
-
 % load kinematic parameters of the manipulator
-load('manipulator.mat');
-
-% prepare for Maple
-MhFile = [tempname, '.mat'];
-eqFile = tempname;
-save(MhFile, 'Mh');
-system(['touch ', eqFile]);
-
-% run Maple
-mapleCMD = [maplePath, ' -c ''MhFile := \`', MhFile, '\`'' -c ''eqFile := \`', eqFile, '\`'' -c ''read \`symReduction.mpl\`'' -c ''quit'''];
-[mapleStatus, output] = system(mapleCMD, '-echo');
-assert(mapleStatus == 0, output);
-
-% format the equations
-system(['sed -i -e ''1 s/\([cs]\)\([1-7]\)/\1(\2)/g'' ', eqFile]);
-system(['sed -i -e ''3 s/\([cs]\)\([1-7]\)/\1Sol(\2, j)/g'' ', eqFile]);
+% choose one of the random manipulators
+manipulatorId = 1;
+load(['manipulator.', num2str(manipulatorId), '.mat']);
 
 % unknowns
 mpol('c', 7);
 mpol('s', 7);
 
-% parse the equations
-eqStr = splitlines(fileread(eqFile));
-eval(eqStr{1});
-I = cg';
-
-% clean up
-delete(MhFile);
-delete(eqFile);
+% polynomials
+p = DHT_GP(M, c, s, 3)*DHT_GP(M, c, s, 4)*DHT_GP(M, c, s, 5) - iDHT_GP(M, c, s, 2)*iDHT_GP(M, c, s, 1)*Mh*iDHT_GP(M, c, s, 7)*iDHT_GP(M, c, s, 6);
+p = p(1:3, :);
+p = transpose(p); % to match equation numbering with Maple
+I = p(:);
 
 % add cos(th_i)^2 + sin(th_i)^2 = 1 equations
 I = [I; c.^2 + s.^2 - 1];
