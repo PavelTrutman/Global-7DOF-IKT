@@ -47,16 +47,16 @@ arXiv preprint arXiv:2007.12550, 2020.
 
 <a id="2">[2]</a>
 Didier Henrion, and Jean-Bernard Lasserre.
-GloptiPoly: Global optimization over polynomials with Matlab and SeDuMi.
+GloptiPoly: Global Optimization over Polynomials with Matlab and SeDuMi.
 ACM Transactions on Mathematical Software (TOMS) 29.2: 165-194, 2003.
 
 <a id="3">[3]</a>
 Johan Löfberg.
-YALMIP: A toolbox for modeling and optimization in MATLAB.
+YALMIP: A Toolbox for Modeling and Optimization in MATLAB.
 In Proceedings of the CACSD Conference, Taipei, Taiwan, 2004.
 
 <a id="4">[4]</a>
 MOSEK ApS.
-The MOSEK optimization toolbox for MATLAB manual.
+The MOSEK Optimization Toolbox for MATLAB Manual.
 Version 8.0, 2016.
 http://docs.mosek.com/8.0/toolbox/index.html
