@@ -73,7 +73,7 @@ delete(eqFile);
 I = [I; ce4.^2 + se4.^2 - 1];
 
 % add joint limit inequalities
-Iineq = [-(ce4 + 1).*tan(M.thetaLimLow(e4)./2) + se4; (ce4 + 1).*tan(M.thetaLimHigh(e4)./2) - se4];
+Iineq = [-(ce4 + 1).*tan(M.thetaLimLow(e4)./2) + se4; (ce4 + 1).*tan(M.thetaLimHigh(e4)./2) - se4; ce4 - max(cos(M.thetaLimLow(e4)), cos(M.thetaLimHigh(e4)))];
 
 % add variable constraints
 Iineq = [Iineq; 1 - ce4.^2; 1 - se4.^2];

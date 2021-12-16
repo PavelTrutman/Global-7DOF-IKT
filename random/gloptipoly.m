@@ -39,7 +39,7 @@ I = p(:);
 I = [I; c.^2 + s.^2 - 1];
 
 % add joint limit inequalities
-Iineq = [-(c + 1).*tan(M.thetaLimLow./2) + s; (c + 1).*tan(M.thetaLimHigh./2) - s];
+Iineq = [-(c + 1).*tan(M.thetaLimLow./2) + s; (c + 1).*tan(M.thetaLimHigh./2) - s; c - max(cos(M.thetaLimLow), cos(M.thetaLimHigh))];
 
 % add variable constraints
 Iineq = [Iineq; 1 - c.^2; 1 - s.^2];
