@@ -12,9 +12,9 @@ MhInfeasible = [    0.4528   -0.1592    0.8773  544.6913;
                     0.0416    0.9866    0.1576 -606.4869;
                    -0.8906   -0.0348    0.4534   39.5770;
                          0         0         0    1.0000];
-MhFailed =     [    0.4293   -0.9028    0.0254  386.1023;
-                    0.8547    0.4151    0.3118  -85.1766;
-                   -0.2920   -0.1122    0.9498    4.5084;
+MhFailed =     [   -0.7945   -0.4860   -0.3641  -45.8070;
+                   -0.3521   -0.1198    0.9283  444.2231;
+                   -0.4948    0.8657   -0.0760  663.6105;
                          0         0         0    1.0000];
 Mh = MhFeasible;
 
@@ -103,17 +103,28 @@ if status == 1
   numSol = size(double(ce4), 3);
   sSol = zeros(7, numSol);
   cSol = zeros(7, numSol);
-  eval(eqStr{2});
   sSol(e4, :) = squeeze(double(se4));
   cSol(e4, :) = squeeze(double(ce4));
+  eval(eqStr{2});
   cSol(4, :) = repmat(cg0, [1 numSol]);
   for j = 1:numSol
     eval(eqStr{3});
     sSol(4, j) = cg1;
+
+    % verify the theta_4 limits
+    th4 = atan2(sSol(4, j), cSol(4, j));
+    if th4 > M.thetaLimHigh(4) || th4 < M.thetaLimLow(4)
+      status = -1;
+      angles = zeros(7, 0);
+    end
   end
   angles = atan2(sSol, cSol);
+else
+  angles = zeros(7, 0);
+end
   
   % show errors
+if status == 1
   for j = 1:numSol
     MhAngles = double(DHFKT(M, angles(:, j)));
 
@@ -124,6 +135,4 @@ if status == 1
     fprintf(['Position error: ', num2str(errorC), ' mm\n']);
     fprintf(['Rotation error: ', num2str(rad2deg(errorR)), ' deg\n']);
   end
-else
-  angles = zeros(7, 0);
 end
